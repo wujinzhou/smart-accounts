@@ -1,6 +1,5 @@
 import { expect } from 'chai'
 import { ethers } from 'hardhat'
-
 import { ECDSAValidator, WebauthnValidator, P256Validator, Secp256r1, EntryPoint, SmartAccountFactory } from '../src/types'
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
 import { UserOperationBuilder, UserOperationMiddlewareCtx } from 'userop'
@@ -116,7 +115,7 @@ describe('Smart Account tests', () => {
       )
     })
 
-    it('create account use factory', async () => {
+    it('validate webauthn signature', async () => {
       const account = await accountFactory.getAddress([validator.address], [pubKey], 0)
       expect(await ethers.provider.getCode(account)).to.equal('0x')
 
@@ -126,9 +125,24 @@ describe('Smart Account tests', () => {
       let pk = await validator.pks(account)
       expect(pk).to.equal(pubKey)
       
+      let result = await validator.callStatic.validateSignature(account, userOpHash, signature)
+      expect(result).to.equal(0)
+
+      /*
+      const { chainId } = await ethers.provider.getNetwork()
+      const builder = new UserOperationBuilder()
+      builder.useMiddleware(getGasPrice(ethers.provider))
+      builder.setSender(account)
+      const op = await builder.buildOp(entryPoint.address, chainId)
+      op.signature = ethers.utils.defaultAbiCoder.encode(['address', 'bytes'], [validator.address, signature])
       
-      let result = await validator.validateSignature(account, userOpHash, signature)
-      
+      const SmartAccount = await ethers.getContractFactory("SmartAccount")
+      const smartAccount = SmartAccount.attach(account)
+
+      let result = await smartAccount.callStatic.<public_exposed>_validateSignature(op, userOpHash)
+      expect(result).to.equal(0)
+      */
+
     })
   })
   
