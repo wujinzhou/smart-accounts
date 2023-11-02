@@ -30,6 +30,7 @@ export interface OwnerSessionKeyValidatorInterface extends utils.Interface {
     "NAME()": FunctionFragment;
     "VERSION()": FunctionFragment;
     "enable(bytes)": FunctionFragment;
+    "recover(bytes)": FunctionFragment;
     "sessionKeyStorage(address,address)": FunctionFragment;
     "supportsInterface(bytes4)": FunctionFragment;
     "validCaller(address,bytes)": FunctionFragment;
@@ -41,6 +42,7 @@ export interface OwnerSessionKeyValidatorInterface extends utils.Interface {
       | "NAME"
       | "VERSION"
       | "enable"
+      | "recover"
       | "sessionKeyStorage"
       | "supportsInterface"
       | "validCaller"
@@ -50,6 +52,7 @@ export interface OwnerSessionKeyValidatorInterface extends utils.Interface {
   encodeFunctionData(functionFragment: "NAME", values?: undefined): string;
   encodeFunctionData(functionFragment: "VERSION", values?: undefined): string;
   encodeFunctionData(functionFragment: "enable", values: [BytesLike]): string;
+  encodeFunctionData(functionFragment: "recover", values: [BytesLike]): string;
   encodeFunctionData(
     functionFragment: "sessionKeyStorage",
     values: [string, string]
@@ -70,6 +73,7 @@ export interface OwnerSessionKeyValidatorInterface extends utils.Interface {
   decodeFunctionResult(functionFragment: "NAME", data: BytesLike): Result;
   decodeFunctionResult(functionFragment: "VERSION", data: BytesLike): Result;
   decodeFunctionResult(functionFragment: "enable", data: BytesLike): Result;
+  decodeFunctionResult(functionFragment: "recover", data: BytesLike): Result;
   decodeFunctionResult(
     functionFragment: "sessionKeyStorage",
     data: BytesLike
@@ -143,6 +147,11 @@ export interface OwnerSessionKeyValidator extends BaseContract {
       overrides?: PayableOverrides & { from?: string }
     ): Promise<ContractTransaction>;
 
+    recover(
+      data: BytesLike,
+      overrides?: PayableOverrides & { from?: string }
+    ): Promise<ContractTransaction>;
+
     sessionKeyStorage(
       sessionKey: string,
       account: string,
@@ -177,6 +186,11 @@ export interface OwnerSessionKeyValidator extends BaseContract {
     overrides?: PayableOverrides & { from?: string }
   ): Promise<ContractTransaction>;
 
+  recover(
+    data: BytesLike,
+    overrides?: PayableOverrides & { from?: string }
+  ): Promise<ContractTransaction>;
+
   sessionKeyStorage(
     sessionKey: string,
     account: string,
@@ -207,6 +221,8 @@ export interface OwnerSessionKeyValidator extends BaseContract {
     VERSION(overrides?: CallOverrides): Promise<string>;
 
     enable(data: BytesLike, overrides?: CallOverrides): Promise<void>;
+
+    recover(data: BytesLike, overrides?: CallOverrides): Promise<boolean>;
 
     sessionKeyStorage(
       sessionKey: string,
@@ -258,6 +274,11 @@ export interface OwnerSessionKeyValidator extends BaseContract {
       overrides?: PayableOverrides & { from?: string }
     ): Promise<BigNumber>;
 
+    recover(
+      data: BytesLike,
+      overrides?: PayableOverrides & { from?: string }
+    ): Promise<BigNumber>;
+
     sessionKeyStorage(
       sessionKey: string,
       account: string,
@@ -289,6 +310,11 @@ export interface OwnerSessionKeyValidator extends BaseContract {
     VERSION(overrides?: CallOverrides): Promise<PopulatedTransaction>;
 
     enable(
+      data: BytesLike,
+      overrides?: PayableOverrides & { from?: string }
+    ): Promise<PopulatedTransaction>;
+
+    recover(
       data: BytesLike,
       overrides?: PayableOverrides & { from?: string }
     ): Promise<PopulatedTransaction>;

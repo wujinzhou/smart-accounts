@@ -32,6 +32,7 @@ export interface P256ValidatorInterface extends utils.Interface {
     "enable(bytes)": FunctionFragment;
     "impl()": FunctionFragment;
     "pks(address)": FunctionFragment;
+    "recover(bytes)": FunctionFragment;
     "supportsInterface(bytes4)": FunctionFragment;
     "validCaller(address,bytes)": FunctionFragment;
     "validateSignature(address,bytes32,bytes)": FunctionFragment;
@@ -44,6 +45,7 @@ export interface P256ValidatorInterface extends utils.Interface {
       | "enable"
       | "impl"
       | "pks"
+      | "recover"
       | "supportsInterface"
       | "validCaller"
       | "validateSignature"
@@ -54,6 +56,7 @@ export interface P256ValidatorInterface extends utils.Interface {
   encodeFunctionData(functionFragment: "enable", values: [BytesLike]): string;
   encodeFunctionData(functionFragment: "impl", values?: undefined): string;
   encodeFunctionData(functionFragment: "pks", values: [string]): string;
+  encodeFunctionData(functionFragment: "recover", values: [BytesLike]): string;
   encodeFunctionData(
     functionFragment: "supportsInterface",
     values: [BytesLike]
@@ -72,6 +75,7 @@ export interface P256ValidatorInterface extends utils.Interface {
   decodeFunctionResult(functionFragment: "enable", data: BytesLike): Result;
   decodeFunctionResult(functionFragment: "impl", data: BytesLike): Result;
   decodeFunctionResult(functionFragment: "pks", data: BytesLike): Result;
+  decodeFunctionResult(functionFragment: "recover", data: BytesLike): Result;
   decodeFunctionResult(
     functionFragment: "supportsInterface",
     data: BytesLike
@@ -144,6 +148,11 @@ export interface P256Validator extends BaseContract {
 
     pks(arg0: string, overrides?: CallOverrides): Promise<[string]>;
 
+    recover(
+      data: BytesLike,
+      overrides?: PayableOverrides & { from?: string }
+    ): Promise<ContractTransaction>;
+
     supportsInterface(
       interfaceId: BytesLike,
       overrides?: CallOverrides
@@ -176,6 +185,11 @@ export interface P256Validator extends BaseContract {
 
   pks(arg0: string, overrides?: CallOverrides): Promise<string>;
 
+  recover(
+    data: BytesLike,
+    overrides?: PayableOverrides & { from?: string }
+  ): Promise<ContractTransaction>;
+
   supportsInterface(
     interfaceId: BytesLike,
     overrides?: CallOverrides
@@ -204,6 +218,8 @@ export interface P256Validator extends BaseContract {
     impl(overrides?: CallOverrides): Promise<string>;
 
     pks(arg0: string, overrides?: CallOverrides): Promise<string>;
+
+    recover(data: BytesLike, overrides?: CallOverrides): Promise<boolean>;
 
     supportsInterface(
       interfaceId: BytesLike,
@@ -251,6 +267,11 @@ export interface P256Validator extends BaseContract {
 
     pks(arg0: string, overrides?: CallOverrides): Promise<BigNumber>;
 
+    recover(
+      data: BytesLike,
+      overrides?: PayableOverrides & { from?: string }
+    ): Promise<BigNumber>;
+
     supportsInterface(
       interfaceId: BytesLike,
       overrides?: CallOverrides
@@ -283,6 +304,11 @@ export interface P256Validator extends BaseContract {
     impl(overrides?: CallOverrides): Promise<PopulatedTransaction>;
 
     pks(arg0: string, overrides?: CallOverrides): Promise<PopulatedTransaction>;
+
+    recover(
+      data: BytesLike,
+      overrides?: PayableOverrides & { from?: string }
+    ): Promise<PopulatedTransaction>;
 
     supportsInterface(
       interfaceId: BytesLike,

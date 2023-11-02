@@ -47,6 +47,10 @@ contract OwnerSessionKeyValidator is BaseValidator {
         emit NewSessionKey(msg.sender, sessionKey, validUntil, validAfter);
     }
 
+    function recover(bytes calldata data) external payable override returns (bool) {
+        revert("not implemented");
+    }
+
     function validCaller(address caller, bytes calldata) external view override returns (bool) {
         SessionKeyStorage storage sessionKey = sessionKeyStorage[caller][msg.sender];
         if (block.timestamp <= sessionKey.validAfter) {

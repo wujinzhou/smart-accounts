@@ -26,6 +26,7 @@ export interface BaseValidatorInterface extends utils.Interface {
     "NAME()": FunctionFragment;
     "VERSION()": FunctionFragment;
     "enable(bytes)": FunctionFragment;
+    "recover(bytes)": FunctionFragment;
     "supportsInterface(bytes4)": FunctionFragment;
     "validCaller(address,bytes)": FunctionFragment;
     "validateSignature(address,bytes32,bytes)": FunctionFragment;
@@ -36,6 +37,7 @@ export interface BaseValidatorInterface extends utils.Interface {
       | "NAME"
       | "VERSION"
       | "enable"
+      | "recover"
       | "supportsInterface"
       | "validCaller"
       | "validateSignature"
@@ -44,6 +46,7 @@ export interface BaseValidatorInterface extends utils.Interface {
   encodeFunctionData(functionFragment: "NAME", values?: undefined): string;
   encodeFunctionData(functionFragment: "VERSION", values?: undefined): string;
   encodeFunctionData(functionFragment: "enable", values: [BytesLike]): string;
+  encodeFunctionData(functionFragment: "recover", values: [BytesLike]): string;
   encodeFunctionData(
     functionFragment: "supportsInterface",
     values: [BytesLike]
@@ -60,6 +63,7 @@ export interface BaseValidatorInterface extends utils.Interface {
   decodeFunctionResult(functionFragment: "NAME", data: BytesLike): Result;
   decodeFunctionResult(functionFragment: "VERSION", data: BytesLike): Result;
   decodeFunctionResult(functionFragment: "enable", data: BytesLike): Result;
+  decodeFunctionResult(functionFragment: "recover", data: BytesLike): Result;
   decodeFunctionResult(
     functionFragment: "supportsInterface",
     data: BytesLike
@@ -112,6 +116,11 @@ export interface BaseValidator extends BaseContract {
       overrides?: PayableOverrides & { from?: string }
     ): Promise<ContractTransaction>;
 
+    recover(
+      data: BytesLike,
+      overrides?: PayableOverrides & { from?: string }
+    ): Promise<ContractTransaction>;
+
     supportsInterface(
       interfaceId: BytesLike,
       overrides?: CallOverrides
@@ -140,6 +149,11 @@ export interface BaseValidator extends BaseContract {
     overrides?: PayableOverrides & { from?: string }
   ): Promise<ContractTransaction>;
 
+  recover(
+    data: BytesLike,
+    overrides?: PayableOverrides & { from?: string }
+  ): Promise<ContractTransaction>;
+
   supportsInterface(
     interfaceId: BytesLike,
     overrides?: CallOverrides
@@ -164,6 +178,8 @@ export interface BaseValidator extends BaseContract {
     VERSION(overrides?: CallOverrides): Promise<string>;
 
     enable(data: BytesLike, overrides?: CallOverrides): Promise<void>;
+
+    recover(data: BytesLike, overrides?: CallOverrides): Promise<boolean>;
 
     supportsInterface(
       interfaceId: BytesLike,
@@ -196,6 +212,11 @@ export interface BaseValidator extends BaseContract {
       overrides?: PayableOverrides & { from?: string }
     ): Promise<BigNumber>;
 
+    recover(
+      data: BytesLike,
+      overrides?: PayableOverrides & { from?: string }
+    ): Promise<BigNumber>;
+
     supportsInterface(
       interfaceId: BytesLike,
       overrides?: CallOverrides
@@ -221,6 +242,11 @@ export interface BaseValidator extends BaseContract {
     VERSION(overrides?: CallOverrides): Promise<PopulatedTransaction>;
 
     enable(
+      data: BytesLike,
+      overrides?: PayableOverrides & { from?: string }
+    ): Promise<PopulatedTransaction>;
+
+    recover(
       data: BytesLike,
       overrides?: PayableOverrides & { from?: string }
     ): Promise<PopulatedTransaction>;

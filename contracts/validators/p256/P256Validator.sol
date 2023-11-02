@@ -37,6 +37,10 @@ contract P256Validator is BaseValidator {
         emit PkChanged(msg.sender, old, data);
     }
 
+    function recover(bytes calldata data) external payable override returns (bool) {
+        revert("not implemented");
+    }
+
     function validCaller(address, bytes calldata) external pure override returns (bool) {
         revert("not implemented");
     }

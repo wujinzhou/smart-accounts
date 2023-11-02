@@ -4,9 +4,11 @@
 import type {
   BaseContract,
   BigNumber,
+  BigNumberish,
   BytesLike,
   CallOverrides,
   ContractTransaction,
+  Overrides,
   PayableOverrides,
   PopulatedTransaction,
   Signer,
@@ -29,31 +31,62 @@ export interface WebauthnValidatorInterface extends utils.Interface {
   functions: {
     "NAME()": FunctionFragment;
     "VERSION()": FunctionFragment;
+    "emails(address)": FunctionFragment;
     "enable(bytes)": FunctionFragment;
+    "fromHex(string)": FunctionFragment;
+    "fromHexChar(uint8)": FunctionFragment;
     "impl()": FunctionFragment;
     "pks(address)": FunctionFragment;
+    "recover(bytes)": FunctionFragment;
+    "recoveryEmail(bytes,bytes)": FunctionFragment;
+    "recoveryNonce(address)": FunctionFragment;
     "supportsInterface(bytes4)": FunctionFragment;
     "validCaller(address,bytes)": FunctionFragment;
+    "validateParams(uint256,address,address,uint256,bytes,string)": FunctionFragment;
     "validateSignature(address,bytes32,bytes)": FunctionFragment;
+    "verifier()": FunctionFragment;
   };
 
   getFunction(
     nameOrSignatureOrTopic:
       | "NAME"
       | "VERSION"
+      | "emails"
       | "enable"
+      | "fromHex"
+      | "fromHexChar"
       | "impl"
       | "pks"
+      | "recover"
+      | "recoveryEmail"
+      | "recoveryNonce"
       | "supportsInterface"
       | "validCaller"
+      | "validateParams"
       | "validateSignature"
+      | "verifier"
   ): FunctionFragment;
 
   encodeFunctionData(functionFragment: "NAME", values?: undefined): string;
   encodeFunctionData(functionFragment: "VERSION", values?: undefined): string;
+  encodeFunctionData(functionFragment: "emails", values: [string]): string;
   encodeFunctionData(functionFragment: "enable", values: [BytesLike]): string;
+  encodeFunctionData(functionFragment: "fromHex", values: [string]): string;
+  encodeFunctionData(
+    functionFragment: "fromHexChar",
+    values: [BigNumberish]
+  ): string;
   encodeFunctionData(functionFragment: "impl", values?: undefined): string;
   encodeFunctionData(functionFragment: "pks", values: [string]): string;
+  encodeFunctionData(functionFragment: "recover", values: [BytesLike]): string;
+  encodeFunctionData(
+    functionFragment: "recoveryEmail",
+    values: [BytesLike, BytesLike]
+  ): string;
+  encodeFunctionData(
+    functionFragment: "recoveryNonce",
+    values: [string]
+  ): string;
   encodeFunctionData(
     functionFragment: "supportsInterface",
     values: [BytesLike]
@@ -63,15 +96,35 @@ export interface WebauthnValidatorInterface extends utils.Interface {
     values: [string, BytesLike]
   ): string;
   encodeFunctionData(
+    functionFragment: "validateParams",
+    values: [BigNumberish, string, string, BigNumberish, BytesLike, string]
+  ): string;
+  encodeFunctionData(
     functionFragment: "validateSignature",
     values: [string, BytesLike, BytesLike]
   ): string;
+  encodeFunctionData(functionFragment: "verifier", values?: undefined): string;
 
   decodeFunctionResult(functionFragment: "NAME", data: BytesLike): Result;
   decodeFunctionResult(functionFragment: "VERSION", data: BytesLike): Result;
+  decodeFunctionResult(functionFragment: "emails", data: BytesLike): Result;
   decodeFunctionResult(functionFragment: "enable", data: BytesLike): Result;
+  decodeFunctionResult(functionFragment: "fromHex", data: BytesLike): Result;
+  decodeFunctionResult(
+    functionFragment: "fromHexChar",
+    data: BytesLike
+  ): Result;
   decodeFunctionResult(functionFragment: "impl", data: BytesLike): Result;
   decodeFunctionResult(functionFragment: "pks", data: BytesLike): Result;
+  decodeFunctionResult(functionFragment: "recover", data: BytesLike): Result;
+  decodeFunctionResult(
+    functionFragment: "recoveryEmail",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
+    functionFragment: "recoveryNonce",
+    data: BytesLike
+  ): Result;
   decodeFunctionResult(
     functionFragment: "supportsInterface",
     data: BytesLike
@@ -81,16 +134,50 @@ export interface WebauthnValidatorInterface extends utils.Interface {
     data: BytesLike
   ): Result;
   decodeFunctionResult(
+    functionFragment: "validateParams",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
     functionFragment: "validateSignature",
     data: BytesLike
   ): Result;
+  decodeFunctionResult(functionFragment: "verifier", data: BytesLike): Result;
 
   events: {
+    "EmailChanged(address,string,string)": EventFragment;
+    "NonceIncrease(address,uint256)": EventFragment;
     "PkChanged(address,bytes,bytes)": EventFragment;
+    "VerifySubject(string)": EventFragment;
   };
 
+  getEvent(nameOrSignatureOrTopic: "EmailChanged"): EventFragment;
+  getEvent(nameOrSignatureOrTopic: "NonceIncrease"): EventFragment;
   getEvent(nameOrSignatureOrTopic: "PkChanged"): EventFragment;
+  getEvent(nameOrSignatureOrTopic: "VerifySubject"): EventFragment;
 }
+
+export interface EmailChangedEventObject {
+  account: string;
+  oldEmail: string;
+  newEmail: string;
+}
+export type EmailChangedEvent = TypedEvent<
+  [string, string, string],
+  EmailChangedEventObject
+>;
+
+export type EmailChangedEventFilter = TypedEventFilter<EmailChangedEvent>;
+
+export interface NonceIncreaseEventObject {
+  account: string;
+  nonce: BigNumber;
+}
+export type NonceIncreaseEvent = TypedEvent<
+  [string, BigNumber],
+  NonceIncreaseEventObject
+>;
+
+export type NonceIncreaseEventFilter = TypedEventFilter<NonceIncreaseEvent>;
 
 export interface PkChangedEventObject {
   account: string;
@@ -103,6 +190,13 @@ export type PkChangedEvent = TypedEvent<
 >;
 
 export type PkChangedEventFilter = TypedEventFilter<PkChangedEvent>;
+
+export interface VerifySubjectEventObject {
+  subject: string;
+}
+export type VerifySubjectEvent = TypedEvent<[string], VerifySubjectEventObject>;
+
+export type VerifySubjectEventFilter = TypedEventFilter<VerifySubjectEvent>;
 
 export interface WebauthnValidator extends BaseContract {
   connect(signerOrProvider: Signer | Provider | string): this;
@@ -135,14 +229,36 @@ export interface WebauthnValidator extends BaseContract {
 
     VERSION(overrides?: CallOverrides): Promise<[string]>;
 
+    emails(arg0: string, overrides?: CallOverrides): Promise<[string]>;
+
     enable(
       data: BytesLike,
       overrides?: PayableOverrides & { from?: string }
     ): Promise<ContractTransaction>;
 
+    fromHex(s: string, overrides?: CallOverrides): Promise<[string]>;
+
+    fromHexChar(c: BigNumberish, overrides?: CallOverrides): Promise<[number]>;
+
     impl(overrides?: CallOverrides): Promise<[string]>;
 
     pks(arg0: string, overrides?: CallOverrides): Promise<[string]>;
+
+    recover(
+      data: BytesLike,
+      overrides?: PayableOverrides & { from?: string }
+    ): Promise<ContractTransaction>;
+
+    recoveryEmail(
+      signature: BytesLike,
+      dkimHeaders: BytesLike,
+      overrides?: Overrides & { from?: string }
+    ): Promise<ContractTransaction>;
+
+    recoveryNonce(
+      arg0: string,
+      overrides?: CallOverrides
+    ): Promise<[BigNumber]>;
 
     supportsInterface(
       interfaceId: BytesLike,
@@ -155,26 +271,57 @@ export interface WebauthnValidator extends BaseContract {
       overrides?: CallOverrides
     ): Promise<[boolean]>;
 
+    validateParams(
+      chainId: BigNumberish,
+      validator: string,
+      account: string,
+      nonce: BigNumberish,
+      newPub: BytesLike,
+      from: string,
+      overrides?: CallOverrides
+    ): Promise<[boolean]>;
+
     validateSignature(
       account: string,
       userOpHash: BytesLike,
       signature: BytesLike,
       overrides?: PayableOverrides & { from?: string }
     ): Promise<ContractTransaction>;
+
+    verifier(overrides?: CallOverrides): Promise<[string]>;
   };
 
   NAME(overrides?: CallOverrides): Promise<string>;
 
   VERSION(overrides?: CallOverrides): Promise<string>;
 
+  emails(arg0: string, overrides?: CallOverrides): Promise<string>;
+
   enable(
     data: BytesLike,
     overrides?: PayableOverrides & { from?: string }
   ): Promise<ContractTransaction>;
 
+  fromHex(s: string, overrides?: CallOverrides): Promise<string>;
+
+  fromHexChar(c: BigNumberish, overrides?: CallOverrides): Promise<number>;
+
   impl(overrides?: CallOverrides): Promise<string>;
 
   pks(arg0: string, overrides?: CallOverrides): Promise<string>;
+
+  recover(
+    data: BytesLike,
+    overrides?: PayableOverrides & { from?: string }
+  ): Promise<ContractTransaction>;
+
+  recoveryEmail(
+    signature: BytesLike,
+    dkimHeaders: BytesLike,
+    overrides?: Overrides & { from?: string }
+  ): Promise<ContractTransaction>;
+
+  recoveryNonce(arg0: string, overrides?: CallOverrides): Promise<BigNumber>;
 
   supportsInterface(
     interfaceId: BytesLike,
@@ -187,6 +334,16 @@ export interface WebauthnValidator extends BaseContract {
     overrides?: CallOverrides
   ): Promise<boolean>;
 
+  validateParams(
+    chainId: BigNumberish,
+    validator: string,
+    account: string,
+    nonce: BigNumberish,
+    newPub: BytesLike,
+    from: string,
+    overrides?: CallOverrides
+  ): Promise<boolean>;
+
   validateSignature(
     account: string,
     userOpHash: BytesLike,
@@ -194,16 +351,34 @@ export interface WebauthnValidator extends BaseContract {
     overrides?: PayableOverrides & { from?: string }
   ): Promise<ContractTransaction>;
 
+  verifier(overrides?: CallOverrides): Promise<string>;
+
   callStatic: {
     NAME(overrides?: CallOverrides): Promise<string>;
 
     VERSION(overrides?: CallOverrides): Promise<string>;
 
+    emails(arg0: string, overrides?: CallOverrides): Promise<string>;
+
     enable(data: BytesLike, overrides?: CallOverrides): Promise<void>;
+
+    fromHex(s: string, overrides?: CallOverrides): Promise<string>;
+
+    fromHexChar(c: BigNumberish, overrides?: CallOverrides): Promise<number>;
 
     impl(overrides?: CallOverrides): Promise<string>;
 
     pks(arg0: string, overrides?: CallOverrides): Promise<string>;
+
+    recover(data: BytesLike, overrides?: CallOverrides): Promise<boolean>;
+
+    recoveryEmail(
+      signature: BytesLike,
+      dkimHeaders: BytesLike,
+      overrides?: CallOverrides
+    ): Promise<boolean>;
+
+    recoveryNonce(arg0: string, overrides?: CallOverrides): Promise<BigNumber>;
 
     supportsInterface(
       interfaceId: BytesLike,
@@ -216,15 +391,47 @@ export interface WebauthnValidator extends BaseContract {
       overrides?: CallOverrides
     ): Promise<boolean>;
 
+    validateParams(
+      chainId: BigNumberish,
+      validator: string,
+      account: string,
+      nonce: BigNumberish,
+      newPub: BytesLike,
+      from: string,
+      overrides?: CallOverrides
+    ): Promise<boolean>;
+
     validateSignature(
       account: string,
       userOpHash: BytesLike,
       signature: BytesLike,
       overrides?: CallOverrides
     ): Promise<BigNumber>;
+
+    verifier(overrides?: CallOverrides): Promise<string>;
   };
 
   filters: {
+    "EmailChanged(address,string,string)"(
+      account?: string | null,
+      oldEmail?: null,
+      newEmail?: null
+    ): EmailChangedEventFilter;
+    EmailChanged(
+      account?: string | null,
+      oldEmail?: null,
+      newEmail?: null
+    ): EmailChangedEventFilter;
+
+    "NonceIncrease(address,uint256)"(
+      account?: string | null,
+      nonce?: null
+    ): NonceIncreaseEventFilter;
+    NonceIncrease(
+      account?: string | null,
+      nonce?: null
+    ): NonceIncreaseEventFilter;
+
     "PkChanged(address,bytes,bytes)"(
       account?: string | null,
       oldPk?: null,
@@ -235,6 +442,9 @@ export interface WebauthnValidator extends BaseContract {
       oldPk?: null,
       newPk?: null
     ): PkChangedEventFilter;
+
+    "VerifySubject(string)"(subject?: null): VerifySubjectEventFilter;
+    VerifySubject(subject?: null): VerifySubjectEventFilter;
   };
 
   estimateGas: {
@@ -242,14 +452,33 @@ export interface WebauthnValidator extends BaseContract {
 
     VERSION(overrides?: CallOverrides): Promise<BigNumber>;
 
+    emails(arg0: string, overrides?: CallOverrides): Promise<BigNumber>;
+
     enable(
       data: BytesLike,
       overrides?: PayableOverrides & { from?: string }
     ): Promise<BigNumber>;
 
+    fromHex(s: string, overrides?: CallOverrides): Promise<BigNumber>;
+
+    fromHexChar(c: BigNumberish, overrides?: CallOverrides): Promise<BigNumber>;
+
     impl(overrides?: CallOverrides): Promise<BigNumber>;
 
     pks(arg0: string, overrides?: CallOverrides): Promise<BigNumber>;
+
+    recover(
+      data: BytesLike,
+      overrides?: PayableOverrides & { from?: string }
+    ): Promise<BigNumber>;
+
+    recoveryEmail(
+      signature: BytesLike,
+      dkimHeaders: BytesLike,
+      overrides?: Overrides & { from?: string }
+    ): Promise<BigNumber>;
+
+    recoveryNonce(arg0: string, overrides?: CallOverrides): Promise<BigNumber>;
 
     supportsInterface(
       interfaceId: BytesLike,
@@ -262,12 +491,24 @@ export interface WebauthnValidator extends BaseContract {
       overrides?: CallOverrides
     ): Promise<BigNumber>;
 
+    validateParams(
+      chainId: BigNumberish,
+      validator: string,
+      account: string,
+      nonce: BigNumberish,
+      newPub: BytesLike,
+      from: string,
+      overrides?: CallOverrides
+    ): Promise<BigNumber>;
+
     validateSignature(
       account: string,
       userOpHash: BytesLike,
       signature: BytesLike,
       overrides?: PayableOverrides & { from?: string }
     ): Promise<BigNumber>;
+
+    verifier(overrides?: CallOverrides): Promise<BigNumber>;
   };
 
   populateTransaction: {
@@ -275,14 +516,45 @@ export interface WebauthnValidator extends BaseContract {
 
     VERSION(overrides?: CallOverrides): Promise<PopulatedTransaction>;
 
+    emails(
+      arg0: string,
+      overrides?: CallOverrides
+    ): Promise<PopulatedTransaction>;
+
     enable(
       data: BytesLike,
       overrides?: PayableOverrides & { from?: string }
     ): Promise<PopulatedTransaction>;
 
+    fromHex(
+      s: string,
+      overrides?: CallOverrides
+    ): Promise<PopulatedTransaction>;
+
+    fromHexChar(
+      c: BigNumberish,
+      overrides?: CallOverrides
+    ): Promise<PopulatedTransaction>;
+
     impl(overrides?: CallOverrides): Promise<PopulatedTransaction>;
 
     pks(arg0: string, overrides?: CallOverrides): Promise<PopulatedTransaction>;
+
+    recover(
+      data: BytesLike,
+      overrides?: PayableOverrides & { from?: string }
+    ): Promise<PopulatedTransaction>;
+
+    recoveryEmail(
+      signature: BytesLike,
+      dkimHeaders: BytesLike,
+      overrides?: Overrides & { from?: string }
+    ): Promise<PopulatedTransaction>;
+
+    recoveryNonce(
+      arg0: string,
+      overrides?: CallOverrides
+    ): Promise<PopulatedTransaction>;
 
     supportsInterface(
       interfaceId: BytesLike,
@@ -295,11 +567,23 @@ export interface WebauthnValidator extends BaseContract {
       overrides?: CallOverrides
     ): Promise<PopulatedTransaction>;
 
+    validateParams(
+      chainId: BigNumberish,
+      validator: string,
+      account: string,
+      nonce: BigNumberish,
+      newPub: BytesLike,
+      from: string,
+      overrides?: CallOverrides
+    ): Promise<PopulatedTransaction>;
+
     validateSignature(
       account: string,
       userOpHash: BytesLike,
       signature: BytesLike,
       overrides?: PayableOverrides & { from?: string }
     ): Promise<PopulatedTransaction>;
+
+    verifier(overrides?: CallOverrides): Promise<PopulatedTransaction>;
   };
 }

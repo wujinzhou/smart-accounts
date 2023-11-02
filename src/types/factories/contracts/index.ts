@@ -3,9 +3,12 @@
 /* eslint-disable */
 export * as common from "./common";
 export * as core from "./core";
+export * as dkim from "./dkim";
 export * as handler from "./handler";
 export * as hooks from "./hooks";
 export * as interfaces from "./interfaces";
+export * as libraries from "./libraries";
+export * as mock from "./mock";
 export * as paymaster from "./paymaster";
 export * as validators from "./validators";
 export { SmartAccount__factory } from "./SmartAccount__factory";

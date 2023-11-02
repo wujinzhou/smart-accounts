@@ -7,3 +7,4 @@ import type * as sessionkey from "./sessionkey";
 export type { sessionkey };
 export type { BaseValidator } from "./BaseValidator";
 export type { ECDSAValidator } from "./ECDSAValidator";
+export type { EmailValidator } from "./EmailValidator";

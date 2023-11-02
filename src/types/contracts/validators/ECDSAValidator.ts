@@ -31,6 +31,7 @@ export interface ECDSAValidatorInterface extends utils.Interface {
     "VERSION()": FunctionFragment;
     "enable(bytes)": FunctionFragment;
     "owner(address)": FunctionFragment;
+    "recover(bytes)": FunctionFragment;
     "supportsInterface(bytes4)": FunctionFragment;
     "validCaller(address,bytes)": FunctionFragment;
     "validateSignature(address,bytes32,bytes)": FunctionFragment;
@@ -42,6 +43,7 @@ export interface ECDSAValidatorInterface extends utils.Interface {
       | "VERSION"
       | "enable"
       | "owner"
+      | "recover"
       | "supportsInterface"
       | "validCaller"
       | "validateSignature"
@@ -51,6 +53,7 @@ export interface ECDSAValidatorInterface extends utils.Interface {
   encodeFunctionData(functionFragment: "VERSION", values?: undefined): string;
   encodeFunctionData(functionFragment: "enable", values: [BytesLike]): string;
   encodeFunctionData(functionFragment: "owner", values: [string]): string;
+  encodeFunctionData(functionFragment: "recover", values: [BytesLike]): string;
   encodeFunctionData(
     functionFragment: "supportsInterface",
     values: [BytesLike]
@@ -68,6 +71,7 @@ export interface ECDSAValidatorInterface extends utils.Interface {
   decodeFunctionResult(functionFragment: "VERSION", data: BytesLike): Result;
   decodeFunctionResult(functionFragment: "enable", data: BytesLike): Result;
   decodeFunctionResult(functionFragment: "owner", data: BytesLike): Result;
+  decodeFunctionResult(functionFragment: "recover", data: BytesLike): Result;
   decodeFunctionResult(
     functionFragment: "supportsInterface",
     data: BytesLike
@@ -138,6 +142,11 @@ export interface ECDSAValidator extends BaseContract {
 
     owner(arg0: string, overrides?: CallOverrides): Promise<[string]>;
 
+    recover(
+      data: BytesLike,
+      overrides?: PayableOverrides & { from?: string }
+    ): Promise<ContractTransaction>;
+
     supportsInterface(
       interfaceId: BytesLike,
       overrides?: CallOverrides
@@ -168,6 +177,11 @@ export interface ECDSAValidator extends BaseContract {
 
   owner(arg0: string, overrides?: CallOverrides): Promise<string>;
 
+  recover(
+    data: BytesLike,
+    overrides?: PayableOverrides & { from?: string }
+  ): Promise<ContractTransaction>;
+
   supportsInterface(
     interfaceId: BytesLike,
     overrides?: CallOverrides
@@ -194,6 +208,8 @@ export interface ECDSAValidator extends BaseContract {
     enable(data: BytesLike, overrides?: CallOverrides): Promise<void>;
 
     owner(arg0: string, overrides?: CallOverrides): Promise<string>;
+
+    recover(data: BytesLike, overrides?: CallOverrides): Promise<boolean>;
 
     supportsInterface(
       interfaceId: BytesLike,
@@ -239,6 +255,11 @@ export interface ECDSAValidator extends BaseContract {
 
     owner(arg0: string, overrides?: CallOverrides): Promise<BigNumber>;
 
+    recover(
+      data: BytesLike,
+      overrides?: PayableOverrides & { from?: string }
+    ): Promise<BigNumber>;
+
     supportsInterface(
       interfaceId: BytesLike,
       overrides?: CallOverrides
@@ -271,6 +292,11 @@ export interface ECDSAValidator extends BaseContract {
     owner(
       arg0: string,
       overrides?: CallOverrides
+    ): Promise<PopulatedTransaction>;
+
+    recover(
+      data: BytesLike,
+      overrides?: PayableOverrides & { from?: string }
     ): Promise<PopulatedTransaction>;
 
     supportsInterface(

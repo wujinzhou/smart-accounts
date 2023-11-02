@@ -35,6 +35,11 @@ contract ECDSAValidator is BaseValidator {
         emit OwnerChanged(msg.sender, oldOwner, _owner);
     }
 
+
+    function recover(bytes calldata data) external payable override returns (bool) {
+        revert("not implemented");
+    }
+
     function validCaller(address caller, bytes calldata) external view override returns (bool) {
         return owner[msg.sender] == caller;
     }

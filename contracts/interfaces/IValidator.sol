@@ -12,4 +12,7 @@ interface IValidator is Metadata {
     function validCaller(address caller, bytes calldata data) external view returns (bool);
 
     function enable(bytes calldata data) external payable;
+
+    function recover(bytes calldata data) external payable returns (bool);
+
 }
