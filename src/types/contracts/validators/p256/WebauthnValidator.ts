@@ -31,18 +31,19 @@ export interface WebauthnValidatorInterface extends utils.Interface {
   functions: {
     "NAME()": FunctionFragment;
     "VERSION()": FunctionFragment;
+    "bindEmail(bytes)": FunctionFragment;
     "emails(address)": FunctionFragment;
     "enable(bytes)": FunctionFragment;
     "fromHex(string)": FunctionFragment;
     "fromHexChar(uint8)": FunctionFragment;
     "impl()": FunctionFragment;
-    "pks(address)": FunctionFragment;
+    "publicKeys(address,string)": FunctionFragment;
     "recover(bytes)": FunctionFragment;
     "recoveryEmail(bytes,bytes)": FunctionFragment;
     "recoveryNonce(address)": FunctionFragment;
     "supportsInterface(bytes4)": FunctionFragment;
     "validCaller(address,bytes)": FunctionFragment;
-    "validateParams(uint256,address,address,uint256,bytes,string)": FunctionFragment;
+    "validateParams(uint256,address,address,uint256,string)": FunctionFragment;
     "validateSignature(address,bytes32,bytes)": FunctionFragment;
     "verifier()": FunctionFragment;
   };
@@ -51,12 +52,13 @@ export interface WebauthnValidatorInterface extends utils.Interface {
     nameOrSignatureOrTopic:
       | "NAME"
       | "VERSION"
+      | "bindEmail"
       | "emails"
       | "enable"
       | "fromHex"
       | "fromHexChar"
       | "impl"
-      | "pks"
+      | "publicKeys"
       | "recover"
       | "recoveryEmail"
       | "recoveryNonce"
@@ -69,6 +71,10 @@ export interface WebauthnValidatorInterface extends utils.Interface {
 
   encodeFunctionData(functionFragment: "NAME", values?: undefined): string;
   encodeFunctionData(functionFragment: "VERSION", values?: undefined): string;
+  encodeFunctionData(
+    functionFragment: "bindEmail",
+    values: [BytesLike]
+  ): string;
   encodeFunctionData(functionFragment: "emails", values: [string]): string;
   encodeFunctionData(functionFragment: "enable", values: [BytesLike]): string;
   encodeFunctionData(functionFragment: "fromHex", values: [string]): string;
@@ -77,7 +83,10 @@ export interface WebauthnValidatorInterface extends utils.Interface {
     values: [BigNumberish]
   ): string;
   encodeFunctionData(functionFragment: "impl", values?: undefined): string;
-  encodeFunctionData(functionFragment: "pks", values: [string]): string;
+  encodeFunctionData(
+    functionFragment: "publicKeys",
+    values: [string, string]
+  ): string;
   encodeFunctionData(functionFragment: "recover", values: [BytesLike]): string;
   encodeFunctionData(
     functionFragment: "recoveryEmail",
@@ -97,7 +106,7 @@ export interface WebauthnValidatorInterface extends utils.Interface {
   ): string;
   encodeFunctionData(
     functionFragment: "validateParams",
-    values: [BigNumberish, string, string, BigNumberish, BytesLike, string]
+    values: [BigNumberish, string, string, BigNumberish, string]
   ): string;
   encodeFunctionData(
     functionFragment: "validateSignature",
@@ -107,6 +116,7 @@ export interface WebauthnValidatorInterface extends utils.Interface {
 
   decodeFunctionResult(functionFragment: "NAME", data: BytesLike): Result;
   decodeFunctionResult(functionFragment: "VERSION", data: BytesLike): Result;
+  decodeFunctionResult(functionFragment: "bindEmail", data: BytesLike): Result;
   decodeFunctionResult(functionFragment: "emails", data: BytesLike): Result;
   decodeFunctionResult(functionFragment: "enable", data: BytesLike): Result;
   decodeFunctionResult(functionFragment: "fromHex", data: BytesLike): Result;
@@ -115,7 +125,7 @@ export interface WebauthnValidatorInterface extends utils.Interface {
     data: BytesLike
   ): Result;
   decodeFunctionResult(functionFragment: "impl", data: BytesLike): Result;
-  decodeFunctionResult(functionFragment: "pks", data: BytesLike): Result;
+  decodeFunctionResult(functionFragment: "publicKeys", data: BytesLike): Result;
   decodeFunctionResult(functionFragment: "recover", data: BytesLike): Result;
   decodeFunctionResult(
     functionFragment: "recoveryEmail",
@@ -146,13 +156,13 @@ export interface WebauthnValidatorInterface extends utils.Interface {
   events: {
     "EmailChanged(address,string,string)": EventFragment;
     "NonceIncrease(address,uint256)": EventFragment;
-    "PkChanged(address,bytes,bytes)": EventFragment;
+    "PkAdded(address,string)": EventFragment;
     "VerifySubject(string)": EventFragment;
   };
 
   getEvent(nameOrSignatureOrTopic: "EmailChanged"): EventFragment;
   getEvent(nameOrSignatureOrTopic: "NonceIncrease"): EventFragment;
-  getEvent(nameOrSignatureOrTopic: "PkChanged"): EventFragment;
+  getEvent(nameOrSignatureOrTopic: "PkAdded"): EventFragment;
   getEvent(nameOrSignatureOrTopic: "VerifySubject"): EventFragment;
 }
 
@@ -179,17 +189,13 @@ export type NonceIncreaseEvent = TypedEvent<
 
 export type NonceIncreaseEventFilter = TypedEventFilter<NonceIncreaseEvent>;
 
-export interface PkChangedEventObject {
+export interface PkAddedEventObject {
   account: string;
-  oldPk: string;
-  newPk: string;
+  keyId: string;
 }
-export type PkChangedEvent = TypedEvent<
-  [string, string, string],
-  PkChangedEventObject
->;
+export type PkAddedEvent = TypedEvent<[string, string], PkAddedEventObject>;
 
-export type PkChangedEventFilter = TypedEventFilter<PkChangedEvent>;
+export type PkAddedEventFilter = TypedEventFilter<PkAddedEvent>;
 
 export interface VerifySubjectEventObject {
   subject: string;
@@ -229,6 +235,11 @@ export interface WebauthnValidator extends BaseContract {
 
     VERSION(overrides?: CallOverrides): Promise<[string]>;
 
+    bindEmail(
+      data: BytesLike,
+      overrides?: PayableOverrides & { from?: string }
+    ): Promise<ContractTransaction>;
+
     emails(arg0: string, overrides?: CallOverrides): Promise<[string]>;
 
     enable(
@@ -242,7 +253,11 @@ export interface WebauthnValidator extends BaseContract {
 
     impl(overrides?: CallOverrides): Promise<[string]>;
 
-    pks(arg0: string, overrides?: CallOverrides): Promise<[string]>;
+    publicKeys(
+      arg0: string,
+      arg1: string,
+      overrides?: CallOverrides
+    ): Promise<[string]>;
 
     recover(
       data: BytesLike,
@@ -276,7 +291,6 @@ export interface WebauthnValidator extends BaseContract {
       validator: string,
       account: string,
       nonce: BigNumberish,
-      newPub: BytesLike,
       from: string,
       overrides?: CallOverrides
     ): Promise<[boolean]>;
@@ -295,6 +309,11 @@ export interface WebauthnValidator extends BaseContract {
 
   VERSION(overrides?: CallOverrides): Promise<string>;
 
+  bindEmail(
+    data: BytesLike,
+    overrides?: PayableOverrides & { from?: string }
+  ): Promise<ContractTransaction>;
+
   emails(arg0: string, overrides?: CallOverrides): Promise<string>;
 
   enable(
@@ -308,7 +327,11 @@ export interface WebauthnValidator extends BaseContract {
 
   impl(overrides?: CallOverrides): Promise<string>;
 
-  pks(arg0: string, overrides?: CallOverrides): Promise<string>;
+  publicKeys(
+    arg0: string,
+    arg1: string,
+    overrides?: CallOverrides
+  ): Promise<string>;
 
   recover(
     data: BytesLike,
@@ -339,7 +362,6 @@ export interface WebauthnValidator extends BaseContract {
     validator: string,
     account: string,
     nonce: BigNumberish,
-    newPub: BytesLike,
     from: string,
     overrides?: CallOverrides
   ): Promise<boolean>;
@@ -358,6 +380,8 @@ export interface WebauthnValidator extends BaseContract {
 
     VERSION(overrides?: CallOverrides): Promise<string>;
 
+    bindEmail(data: BytesLike, overrides?: CallOverrides): Promise<void>;
+
     emails(arg0: string, overrides?: CallOverrides): Promise<string>;
 
     enable(data: BytesLike, overrides?: CallOverrides): Promise<void>;
@@ -368,7 +392,11 @@ export interface WebauthnValidator extends BaseContract {
 
     impl(overrides?: CallOverrides): Promise<string>;
 
-    pks(arg0: string, overrides?: CallOverrides): Promise<string>;
+    publicKeys(
+      arg0: string,
+      arg1: string,
+      overrides?: CallOverrides
+    ): Promise<string>;
 
     recover(data: BytesLike, overrides?: CallOverrides): Promise<boolean>;
 
@@ -396,7 +424,6 @@ export interface WebauthnValidator extends BaseContract {
       validator: string,
       account: string,
       nonce: BigNumberish,
-      newPub: BytesLike,
       from: string,
       overrides?: CallOverrides
     ): Promise<boolean>;
@@ -432,16 +459,11 @@ export interface WebauthnValidator extends BaseContract {
       nonce?: null
     ): NonceIncreaseEventFilter;
 
-    "PkChanged(address,bytes,bytes)"(
+    "PkAdded(address,string)"(
       account?: string | null,
-      oldPk?: null,
-      newPk?: null
-    ): PkChangedEventFilter;
-    PkChanged(
-      account?: string | null,
-      oldPk?: null,
-      newPk?: null
-    ): PkChangedEventFilter;
+      keyId?: null
+    ): PkAddedEventFilter;
+    PkAdded(account?: string | null, keyId?: null): PkAddedEventFilter;
 
     "VerifySubject(string)"(subject?: null): VerifySubjectEventFilter;
     VerifySubject(subject?: null): VerifySubjectEventFilter;
@@ -451,6 +473,11 @@ export interface WebauthnValidator extends BaseContract {
     NAME(overrides?: CallOverrides): Promise<BigNumber>;
 
     VERSION(overrides?: CallOverrides): Promise<BigNumber>;
+
+    bindEmail(
+      data: BytesLike,
+      overrides?: PayableOverrides & { from?: string }
+    ): Promise<BigNumber>;
 
     emails(arg0: string, overrides?: CallOverrides): Promise<BigNumber>;
 
@@ -465,7 +492,11 @@ export interface WebauthnValidator extends BaseContract {
 
     impl(overrides?: CallOverrides): Promise<BigNumber>;
 
-    pks(arg0: string, overrides?: CallOverrides): Promise<BigNumber>;
+    publicKeys(
+      arg0: string,
+      arg1: string,
+      overrides?: CallOverrides
+    ): Promise<BigNumber>;
 
     recover(
       data: BytesLike,
@@ -496,7 +527,6 @@ export interface WebauthnValidator extends BaseContract {
       validator: string,
       account: string,
       nonce: BigNumberish,
-      newPub: BytesLike,
       from: string,
       overrides?: CallOverrides
     ): Promise<BigNumber>;
@@ -515,6 +545,11 @@ export interface WebauthnValidator extends BaseContract {
     NAME(overrides?: CallOverrides): Promise<PopulatedTransaction>;
 
     VERSION(overrides?: CallOverrides): Promise<PopulatedTransaction>;
+
+    bindEmail(
+      data: BytesLike,
+      overrides?: PayableOverrides & { from?: string }
+    ): Promise<PopulatedTransaction>;
 
     emails(
       arg0: string,
@@ -538,7 +573,11 @@ export interface WebauthnValidator extends BaseContract {
 
     impl(overrides?: CallOverrides): Promise<PopulatedTransaction>;
 
-    pks(arg0: string, overrides?: CallOverrides): Promise<PopulatedTransaction>;
+    publicKeys(
+      arg0: string,
+      arg1: string,
+      overrides?: CallOverrides
+    ): Promise<PopulatedTransaction>;
 
     recover(
       data: BytesLike,
@@ -572,7 +611,6 @@ export interface WebauthnValidator extends BaseContract {
       validator: string,
       account: string,
       nonce: BigNumberish,
-      newPub: BytesLike,
       from: string,
       overrides?: CallOverrides
     ): Promise<PopulatedTransaction>;

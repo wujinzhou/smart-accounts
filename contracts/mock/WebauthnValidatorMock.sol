@@ -1,14 +1,13 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.19;
 
-import "../validators/p256/WebauthnValidator.sol";
+import '../validators/p256/WebauthnValidator.sol';
 
 contract WebauthnValidatorMock is WebauthnValidator {
-
     constructor(ISecp256r1 _impl, DkimVerifier _verifier) WebauthnValidator(_impl, _verifier) {}
 
-    function createAccount(address account, bytes memory pub, string memory email) public {
-        pks[account] = pub;
+    function createAccount(address account, bytes memory keyBytes, string memory keyId, string memory email) public {
+        publicKeys[account][keyId] = keyBytes;
         emails[account] = email;
     }
 

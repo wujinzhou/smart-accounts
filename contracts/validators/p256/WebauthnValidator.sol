@@ -1,21 +1,23 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.19;
 
-import "../../common/Contants.sol";
-import "../BaseValidator.sol";
-import "./ISecp256r1.sol";
-import "./Base64.sol";
-import "../../dkim/DkimVerifier.sol";
-import "../../libraries/DkimDecoder.sol";
+import '../../common/Contants.sol';
+import '../BaseValidator.sol';
+import './ISecp256r1.sol';
+import './Base64.sol';
+import '../../dkim/DkimVerifier.sol';
+import '../../libraries/DkimDecoder.sol';
+import 'hardhat/console.sol';
 
 contract WebauthnValidator is BaseValidator {
     using DkimDecoder for *;
     using strings for *;
 
-    string public constant override NAME = "Webauthn Validator";
-    string public constant override VERSION = "0.0.1";
+    string public constant override NAME = 'Webauthn Validator';
+    string public constant override VERSION = '0.0.1';
 
-    event PkChanged(address indexed account, bytes oldPk, bytes newPk);
+    //event PkChanged(address indexed account, bytes oldPk, bytes newPk);
+    event PkAdded(address indexed account, string keyId);
     event EmailChanged(address indexed account, string oldEmail, string newEmail);
     event NonceIncrease(address indexed account, uint nonce);
 
@@ -25,7 +27,12 @@ contract WebauthnValidator is BaseValidator {
     ISecp256r1 public immutable impl;
     DkimVerifier public immutable verifier;
 
-    mapping(address => bytes) public pks;
+    //mapping(address => bytes) public pks;
+    mapping(address => mapping(string => bytes)) public publicKeys;
+
+    // can we consider to use (salted) hash for emails?
+    // keccak256(abi.encode(msg.sender, "foobar@gmail.com")) or keccak256("foobar@gmail.com")
+
     mapping(address => string) public emails;
     mapping(address => uint) public recoveryNonce;
 
@@ -34,39 +41,88 @@ contract WebauthnValidator is BaseValidator {
         verifier = _verifier;
     }
 
-    function validateSignature(address account, bytes32 userOpHash, bytes calldata signature)
-    external
-    payable
-    override
-    returns (uint256 validationData)
-    {
+    function validateSignature(
+        address account,
+        bytes32 userOpHash,
+        bytes calldata signature
+    ) external payable override returns (uint256 validationData) {
         bytes memory sig;
         bytes32 messageHash;
+        string memory keyId;
         {
             (
                 bytes memory realSig,
                 bytes memory authenticatorData,
                 string memory clientDataJSONPre,
-                string memory clientDataJSONPost
-            ) = abi.decode(signature, (bytes, bytes, string, string));
+                string memory clientDataJSONPost,
+                string memory passkeyId
+            ) = abi.decode(signature, (bytes, bytes, string, string, string));
 
-            string memory clientDataJSON =
-                                string.concat(clientDataJSONPre, Base64.encode(bytes.concat(userOpHash)), clientDataJSONPost);
+            string memory clientDataJSON = string.concat(
+                clientDataJSONPre,
+                Base64.encode(bytes.concat(userOpHash)),
+                clientDataJSONPost
+            );
             bytes32 clientDataHash = sha256(bytes(clientDataJSON));
             messageHash = sha256(bytes.concat(authenticatorData, clientDataHash));
             sig = realSig;
+            keyId = passkeyId;
         }
 
-        if (impl.validateSignature(messageHash, sig, pks[account])) {
+        if (impl.validateSignature(messageHash, sig, publicKeys[account][keyId])) {
             return 0;
         }
         return Contants.SIG_VALIDATION_FAILED;
     }
 
     function enable(bytes calldata data) external payable override {
-        (bytes memory pub, string memory email) = abi.decode(data, (bytes, string));
-        changePubkey(msg.sender, pub);
+        (bytes memory keyBytes, string memory keyId, string memory email) = abi.decode(data, (bytes, string, string));
+        addPubkey(msg.sender, keyBytes, keyId);
         changeEmail(msg.sender, email);
+    }
+
+    // use webauthn passkey signature to bind an email to account
+    function bindEmail(bytes calldata data) external payable {
+        (address account, string memory emailToBind, bytes memory signature) = abi.decode(
+            data,
+            (address, string, bytes)
+        );
+
+        string memory oldEmail = emails[account];
+        if (!oldEmail.toSlice().equals(''.toSlice())) {
+            revert('account email not empty');
+        }
+
+        bytes memory sig;
+        bytes32 messageHash;
+        string memory keyId;
+        {
+            (
+                bytes memory realSig,
+                bytes memory authenticatorData,
+                string memory clientDataJSONPre,
+                string memory clientDataJSONPost,
+                string memory passkeyId
+            ) = abi.decode(signature, (bytes, bytes, string, string, string));
+
+            bytes32 challenge = keccak256(abi.encode(account, emailToBind));
+
+            string memory clientDataJSON = string.concat(
+                clientDataJSONPre,
+                Base64.encode(bytes.concat(challenge)),
+                clientDataJSONPost
+            );
+            bytes32 clientDataHash = sha256(bytes(clientDataJSON));
+            messageHash = sha256(bytes.concat(authenticatorData, clientDataHash));
+            sig = realSig;
+            keyId = passkeyId;
+        }
+
+        if (impl.validateSignature(messageHash, sig, publicKeys[account][keyId])) {
+            revert('bind email failed, invalid signature');
+        }
+
+        changeEmail(account, emailToBind);
     }
 
     // If you don't have any validator to enable your passkey, we can recover it externally.
@@ -78,18 +134,28 @@ contract WebauthnValidator is BaseValidator {
     }
 
     function recoveryEmail(bytes memory signature, bytes memory dkimHeaders) public returns (bool) {
-
         DkimDecoder.Headers memory headers = DkimDecoder.parse(string(dkimHeaders));
 
         // TODO Check if the signature is expired
-        string memory subject = DkimDecoder.getHeader(headers, "subject");
+        string memory subject = DkimDecoder.getHeader(headers, 'subject');
         bytes memory subjectBytes = fromHex(subject);
         emit VerifySubject(subject);
 
-        (uint chainId, address validator, address account, uint nonce, bytes memory newPub) = abi.decode(subjectBytes, (uint, address, address, uint, bytes));
+        (uint chainId, address validator, address account, uint nonce, bytes memory keyBytes, string memory keyId) = abi
+            .decode(subjectBytes, (uint, address, address, uint, bytes, string));
         string memory from = DkimDecoder.getFromHeader(headers);
 
-        if (!validateParams(chainId, validator, account, nonce, newPub, from)) {
+        /*
+        console.log('chainId:\n%s', chainId);
+        console.log('validator:\n%s - %s', validator, address(this));
+        console.log('account:\n%s - %s', account, msg.sender);
+        console.log('nonce:\n%s', nonce);
+        console.log('keyId:\n%s', keyId);
+        console.log('keyBytes:');
+        console.logBytes(keyBytes);
+        */
+
+        if (!validateParams(chainId, validator, account, nonce, from)) {
             return false;
         }
 
@@ -102,19 +168,26 @@ contract WebauthnValidator is BaseValidator {
             return false;
         }
 
-        changePubkey(account, newPub);
+        //changePubkey(account, newPub);
+        addPubkey(account, keyBytes, keyId);
         increaseNonce(account);
 
         return true;
     }
 
-    function validateParams(uint chainId, address validator, address account, uint nonce, bytes memory newPub, string memory from) public view returns (bool) {
+    function validateParams(
+        uint chainId,
+        address validator,
+        address account,
+        uint nonce,
+        string memory from
+    ) public view returns (bool) {
         // we should check data in subject to prevent replay attacking
         // data.subject = chainid + address(this) + opCode + nonce + account + publickey (maybe also should including function selector)
         // TODO
-//        if (chainId != block.chainid || validator != address(this)) {
-//            return false;
-//        }
+        //        if (chainId != block.chainid || validator != address(this)) {
+        //            return false;
+        //        }
 
         uint nonceStored = recoveryNonce[account];
         if (nonceStored != nonce) {
@@ -149,7 +222,7 @@ contract WebauthnValidator is BaseValidator {
         if (bytes1(c) >= bytes1('A') && bytes1(c) <= bytes1('F')) {
             return 10 + c - uint8(bytes1('A'));
         }
-        revert("invalid hex string");
+        revert('invalid hex string');
     }
 
     // Convert an hexadecimal string to raw bytes
@@ -158,16 +231,25 @@ contract WebauthnValidator is BaseValidator {
         require(ss.length % 2 == 0);
         bytes memory r = new bytes(ss.length / 2);
         for (uint i = 0; i < ss.length / 2; ++i) {
-            r[i] = bytes1(fromHexChar(uint8(ss[2 * i])) * 16 +
-            fromHexChar(uint8(ss[2 * i + 1])));
+            r[i] = bytes1(fromHexChar(uint8(ss[2 * i])) * 16 + fromHexChar(uint8(ss[2 * i + 1])));
         }
         return r;
     }
 
+    /*
     function changePubkey(address account, bytes memory pub) internal {
         bytes memory oldPub = pks[msg.sender];
         pks[msg.sender] = pub;
         emit PkChanged(account, oldPub, pub);
+    }
+    */
+
+    function addPubkey(address account, bytes memory keyBytes, string memory keyId) internal {
+        if (publicKeys[account][keyId].length != 0) {
+            revert('duplicate key');
+        }
+        publicKeys[account][keyId] = keyBytes;
+        emit PkAdded(account, keyId);
     }
 
     function changeEmail(address account, string memory email) internal {
@@ -177,6 +259,6 @@ contract WebauthnValidator is BaseValidator {
     }
 
     function validCaller(address, bytes calldata) external pure override returns (bool) {
-        revert("not implemented");
+        revert('not implemented');
     }
 }
