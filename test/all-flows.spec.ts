@@ -13,7 +13,8 @@ import {SignerWithAddress} from '@nomiclabs/hardhat-ethers/signers'
 import {UserOperationBuilder, UserOperationMiddlewareCtx} from 'userop'
 import {getGasPrice} from 'userop/dist/preset/middleware'
 import {BytesLike} from 'ethers'
-import {ErrorFragment, toUtf8Bytes} from 'ethers/lib/utils'
+import {AbiCoder, ErrorFragment, hexlify, toUtf8Bytes} from 'ethers/lib/utils'
+import { keccak256, toBuffer } from 'ethereumjs-util'
 
 export async function deployEntryPoint(): Promise<EntryPoint> {
     const factory = await ethers.getContractFactory('EntryPoint')
@@ -262,7 +263,11 @@ describe('Smart Account tests', () => {
             await validator.createAccount(accountOwner, pubKeyBytes3, pubKeyId3, '')
             expect(await validator.emails(accountOwner)).to.equal('')
 
-            //challenge = '0x13bd0b287cb48a07fc91b20f924ef697b0c82a6658c8c124e6207a1aeb864b67'
+            const challenge = '0x13bd0b287cb48a07fc91b20f924ef697b0c82a6658c8c124e6207a1aeb864b67'
+            const payload = ethers.utils.defaultAbiCoder.encode(['address', 'string'], [accountOwner, emailJZ])
+            const dataToSign = hexlify(keccak256(toBuffer(payload)))
+            expect(dataToSign).to.equal(challenge)
+
             await validator.bindEmail(callData)
             expect(await validator.emails(accountOwner)).to.equal(emailJZ)
         
