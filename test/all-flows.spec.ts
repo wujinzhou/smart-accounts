@@ -234,10 +234,11 @@ describe('Smart Account tests', () => {
             expect(key2).to.equal(pubKeyBytes2)
         })
 
+        /*
         it('add email with passkey', async () => {
             const accountOwner = '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266'
 
-            const pubKeyId3 = 'FI9HYGq3Ph_MjaKF4_gY0kqS2Zg'
+            const pubKeyId3 = 'a2ef6294b5e3035ea09457130f8fe57377a8ec2fc2af89972410bbb4b3375115'
             const passkeyX3 = ethers.utils.hexZeroPad(ethers.utils.hexlify("0xab0015065effc018611e19609c9f8c5c2f006355eda7270ae66976729deebc82"), 32)
             const passkeyY3 = ethers.utils.hexZeroPad(ethers.utils.hexlify("0x3ecd432020ff355d3e67c43f4bfef08ff2e06b0a14b43d7527f29da4a50c8457"), 32)
             const pubKeyBytes3 = ethers.utils.defaultAbiCoder.encode(['uint256', 'uint256'], [passkeyX3, passkeyY3])
@@ -271,7 +272,50 @@ describe('Smart Account tests', () => {
             await validator.bindEmail(callData)
             expect(await validator.emails(accountOwner)).to.equal(emailJZ)
         
+        })*/
+
+        it('add email with passkey', async () => {
+            const emailDennis = 'dennis.lee@okg.com'
+            const accountOwner = '0xc0A5E7202Cf0f8De928588c4F0db40571Ee19D7D'
+
+            const pubKeyId3 = 'a2ef6294b5e3035ea09457130f8fe57377a8ec2fc2af89972410bbb4b3375115'
+            const passkeyX3 = ethers.utils.hexZeroPad(ethers.utils.hexlify("0x68C246B13BB07C22220CBC4AA738F2A39FACAE1C64298523FD571EE6DA8C17EF"), 32)
+            const passkeyY3 = ethers.utils.hexZeroPad(ethers.utils.hexlify("0x743FBCE7AC3C32AB5DBADC811E26D4C4626265B67F0CBA16BB216E63C23E47C7"), 32)
+            const pubKeyBytes3 = ethers.utils.defaultAbiCoder.encode(['uint256', 'uint256'], [passkeyX3, passkeyY3])
+            
+
+            const clientDataJSONPre = '{"type":"webauthn.get","challenge":"'
+            const clientDataJSONPost = '","origin":"http://localhost:3000","crossOrigin":false}'
+
+            const realSig = ethers.utils.hexlify("0xd4fbc8b28d78f2a73a6e941c6f49493f24a8618461d2dc14d8122faccc2e306bf323c02f1d1f72ed09b42a94a0b181e1ce3b40bc3d16700bc0be4fea1dc604b9")
+            
+            const authenticatorData = ethers.utils.hexlify("0x49960de5880e8c687434170f6476605b8fe4aeb9a28632c7995cf3ba831d97630500000000")
+
+            const singData = ethers.utils.defaultAbiCoder.encode(
+                ['bytes', 'bytes', 'string', 'string', 'string'], 
+                [realSig, authenticatorData, clientDataJSONPre, clientDataJSONPost, pubKeyId3]
+            )
+            //console.log(`singData:\n${singData}`)
+            
+            const callData = ethers.utils.defaultAbiCoder.encode(
+                ['address', 'string', 'bytes'],
+                [accountOwner, emailDennis, singData]
+            )
+
+            await validator.createAccount(accountOwner, pubKeyBytes3, pubKeyId3, '')
+            expect(await validator.emails(accountOwner)).to.equal('')
+
+            const challenge = '0x14dfd1567a908f17da103cb9872623e5d472f3cb3d181efd1455fba9afc86a41'
+            const payload = ethers.utils.defaultAbiCoder.encode(['address', 'string'], [accountOwner, emailDennis])
+            const dataToSign = hexlify(keccak256(toBuffer(payload)))
+            expect(dataToSign).to.equal(challenge)
+
+            //expect (await validator.callStatic.validateSignature(accountOwner, dataToSign, singData)).to.equal(0)
+
+            await validator.bindEmail(callData)
+            expect(await validator.emails(accountOwner)).to.equal(emailDennis)
         })
+        
 
     })
 

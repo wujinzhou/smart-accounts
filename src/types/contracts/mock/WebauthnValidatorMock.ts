@@ -420,7 +420,7 @@ export interface WebauthnValidatorMock extends BaseContract {
 
     VERSION(overrides?: CallOverrides): Promise<string>;
 
-    bindEmail(data: BytesLike, overrides?: CallOverrides): Promise<void>;
+    bindEmail(data: BytesLike, overrides?: CallOverrides): Promise<boolean>;
 
     createAccount(
       account: string,

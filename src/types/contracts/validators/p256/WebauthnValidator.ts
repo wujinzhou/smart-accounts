@@ -380,7 +380,7 @@ export interface WebauthnValidator extends BaseContract {
 
     VERSION(overrides?: CallOverrides): Promise<string>;
 
-    bindEmail(data: BytesLike, overrides?: CallOverrides): Promise<void>;
+    bindEmail(data: BytesLike, overrides?: CallOverrides): Promise<boolean>;
 
     emails(arg0: string, overrides?: CallOverrides): Promise<string>;
 

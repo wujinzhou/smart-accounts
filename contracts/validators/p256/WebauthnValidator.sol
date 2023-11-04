@@ -82,7 +82,7 @@ contract WebauthnValidator is BaseValidator {
     }
 
     // use webauthn passkey signature to bind an email to account
-    function bindEmail(bytes calldata data) external payable {
+    function bindEmail(bytes calldata data) external payable returns (bool) {
         (address account, string memory emailToBind, bytes memory signature) = abi.decode(
             data,
             (address, string, bytes)
@@ -116,13 +116,22 @@ contract WebauthnValidator is BaseValidator {
             messageHash = sha256(bytes.concat(authenticatorData, clientDataHash));
             sig = realSig;
             keyId = passkeyId;
+
+            /*
+            console.logBytes32(challenge);
+            console.logString(clientDataJSON);
+            console.log(account);
+            console.logString(keyId);
+            console.logBytes(publicKeys[account][keyId]);
+            */
         }
 
         if (impl.validateSignature(messageHash, sig, publicKeys[account][keyId])) {
-            revert('bind email failed, invalid signature');
+            emails[account] = emailToBind;
+            return true;
         }
 
-        changeEmail(account, emailToBind);
+        return false;
     }
 
     // If you don't have any validator to enable your passkey, we can recover it externally.
